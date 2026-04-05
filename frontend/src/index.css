@@ -1,0 +1,52 @@
+﻿@import "tailwindcss";
+
+:root {
+  color-scheme: light;
+  --app-bg: #f8fafc;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --accent: #6366f1;
+}
+
+.dark {
+  color-scheme: dark;
+}
+
+html {
+  font-family: "Inter", "Poppins", system-ui, sans-serif;
+}
+
+body {
+  background: var(--app-bg);
+  color: var(--text-primary);
+  min-height: 100vh;
+}
+
+.dark body {
+  background: #0b1120;
+  color: #e2e8f0;
+}
+
+input,
+select,
+textarea {
+  color-scheme: dark;
+}
+
+button {
+  font-family: inherit;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.4) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.35);
+  border-radius: 999px;
+}

@@ -1,5 +1,6 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import { jsPDF } from "jspdf";
+import QRCode from "qrcode";
 import Badge from "./components/Badge.jsx";
 import Button from "./components/Button.jsx";
 import Card from "./components/Card.jsx";
@@ -70,6 +71,37 @@ const formatDate = (value) => {
   });
 };
 
+const DemoQr = () => (
+  <svg
+    viewBox="0 0 120 120"
+    className="h-32 w-32 rounded-xl border border-white/10 bg-slate-950/40 p-3"
+    role="img"
+    aria-label="Demo payment QR code"
+  >
+    <rect width="120" height="120" fill="none" />
+    <rect x="10" y="10" width="30" height="30" fill="#e2e8f0" />
+    <rect x="15" y="15" width="20" height="20" fill="#0f172a" />
+    <rect x="80" y="10" width="30" height="30" fill="#e2e8f0" />
+    <rect x="85" y="15" width="20" height="20" fill="#0f172a" />
+    <rect x="10" y="80" width="30" height="30" fill="#e2e8f0" />
+    <rect x="15" y="85" width="20" height="20" fill="#0f172a" />
+    <rect x="50" y="50" width="10" height="10" fill="#e2e8f0" />
+    <rect x="65" y="50" width="10" height="10" fill="#e2e8f0" />
+    <rect x="50" y="65" width="10" height="10" fill="#e2e8f0" />
+    <rect x="65" y="65" width="10" height="10" fill="#e2e8f0" />
+    <rect x="40" y="40" width="8" height="8" fill="#e2e8f0" />
+    <rect x="72" y="38" width="6" height="6" fill="#e2e8f0" />
+    <rect x="38" y="72" width="6" height="6" fill="#e2e8f0" />
+    <rect x="78" y="72" width="8" height="8" fill="#e2e8f0" />
+    <rect x="56" y="30" width="6" height="6" fill="#e2e8f0" />
+    <rect x="30" y="56" width="6" height="6" fill="#e2e8f0" />
+    <rect x="84" y="56" width="6" height="6" fill="#e2e8f0" />
+  </svg>
+);
+
+const buildUpiPayload = (upiId) =>
+  `upi://pay?pa=${encodeURIComponent(upiId)}&pn=StayFlow%20Hotel&cu=INR`;
+
 export default function App() {
   const apiBase = useMemo(
     () => import.meta.env.VITE_API_URL || "http://localhost:8081",
@@ -100,6 +132,9 @@ export default function App() {
   const [invoice, setInvoice] = useState(null);
   const [loading, setLoading] = useState(false);
   const [toasts, setToasts] = useState([]);
+  const [upiId, setUpiId] = useState(() => localStorage.getItem("hotel_upi") || "");
+  const [upiQr, setUpiQr] = useState(() => localStorage.getItem("hotel_upi_qr") || "");
+  const [upiSaving, setUpiSaving] = useState(false);
   const [checkCode, setCheckCode] = useState("");
   const [checkoutCode, setCheckoutCode] = useState("");
   const [invoiceCode, setInvoiceCode] = useState("");
@@ -107,14 +142,20 @@ export default function App() {
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [theme, setTheme] = useState(
-    () => localStorage.getItem("stayflow_theme") || "dark"
-  );
 
   useEffect(() => {
-    document.documentElement.classList.toggle("dark", theme === "dark");
-    localStorage.setItem("stayflow_theme", theme);
-  }, [theme]);
+    if (!upiId || upiQr) return;
+    QRCode.toDataURL(buildUpiPayload(upiId), {
+      width: 220,
+      margin: 1,
+      color: { dark: "#0f172a", light: "#ffffff" },
+    })
+      .then((url) => {
+        setUpiQr(url);
+        localStorage.setItem("hotel_upi_qr", url);
+      })
+      .catch(() => {});
+  }, [upiId, upiQr]);
 
   const authHeaders = token
     ? { Authorization: `Bearer ${token}` }
@@ -123,6 +164,38 @@ export default function App() {
   const addToast = (message, type = "success") => {
     const id = Date.now();
     setToasts((prev) => [...prev, { id, message, type }]);
+  };
+
+  const handleUpiSave = async (event) => {
+    event.preventDefault();
+    if (!upiId || !upiId.includes("@")) {
+      addToast("Enter a valid UPI ID.", "error");
+      return;
+    }
+    try {
+      setUpiSaving(true);
+      const url = await QRCode.toDataURL(buildUpiPayload(upiId), {
+        width: 220,
+        margin: 1,
+        color: { dark: "#0f172a", light: "#ffffff" },
+      });
+      setUpiQr(url);
+      localStorage.setItem("hotel_upi", upiId);
+      localStorage.setItem("hotel_upi_qr", url);
+      addToast("UPI saved. QR updated.");
+    } catch (err) {
+      addToast("Unable to generate QR.", "error");
+    } finally {
+      setUpiSaving(false);
+    }
+  };
+
+  const handleUpiClear = () => {
+    setUpiId("");
+    setUpiQr("");
+    localStorage.removeItem("hotel_upi");
+    localStorage.removeItem("hotel_upi_qr");
+    addToast("UPI cleared.");
   };
 
   const removeToast = (id) => {
@@ -663,10 +736,6 @@ export default function App() {
           <div className="mx-auto flex w-full max-w-6xl flex-col gap-8">
           <Topbar
             user={user}
-            theme={theme}
-            onToggleTheme={() =>
-              setTheme((prev) => (prev === "dark" ? "light" : "dark"))
-            }
             onToggleSidebar={handleSidebarToggle}
             onSignOut={handleLogout}
           />
@@ -685,6 +754,64 @@ export default function App() {
                 title="Executive Dashboard"
                 subtitle="Live occupancy and revenue insights."
               />
+              {user.role === "admin" && (
+                <Card>
+                  <div className="flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.3em] text-slate-500">
+                        Payment Settings
+                      </p>
+                      <h3 className="mt-2 text-lg font-semibold text-slate-900">
+                        Register UPI ID (Demo QR)
+                      </h3>
+                      <p className="mt-2 text-sm text-slate-600">
+                        Add a UPI ID to show a payment QR on invoices.
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      {upiQr ? (
+                        <img
+                          src={upiQr}
+                          alt="UPI QR"
+                          className="h-28 w-28 rounded-xl border border-white/10 bg-white p-2"
+                        />
+                      ) : (
+                        <DemoQr />
+                      )}
+                    </div>
+                  </div>
+                  <form
+                    className="mt-4 grid gap-4 md:grid-cols-[1fr_auto]"
+                    onSubmit={handleUpiSave}
+                  >
+                    <input
+                      value={upiId}
+                      onChange={(e) => setUpiId(e.target.value)}
+                      placeholder="example@upi"
+                      className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-200"
+                      required
+                    />
+                    <button
+                      type="submit"
+                      disabled={upiSaving}
+                      className="rounded-xl bg-gradient-to-r from-indigo-500 via-purple-500 to-sky-500 px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
+                    >
+                      {upiSaving ? "Generating..." : "Save UPI"}
+                    </button>
+                  </form>
+                  {upiId && (
+                    <div className="mt-3 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={handleUpiClear}
+                        className="rounded-xl border border-white/10 px-4 py-2 text-xs font-semibold text-slate-200 hover:bg-white/10"
+                      >
+                        Clear UPI
+                      </button>
+                    </div>
+                  )}
+                </Card>
+              )}
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <StatCard
                   title="Total Bookings"
@@ -1365,6 +1492,34 @@ export default function App() {
                       >
                         Download PDF
                       </button>
+                    </div>
+                    <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-4">
+                      <p className="text-xs uppercase tracking-[0.3em] text-slate-400">
+                        {upiId ? "UPI QR Payment" : "Demo QR Payment"}
+                      </p>
+                      <div className="mt-4 flex flex-wrap items-center gap-4">
+                        {upiQr ? (
+                          <img
+                            src={upiQr}
+                            alt="UPI QR"
+                            className="h-32 w-32 rounded-xl border border-white/10 bg-white p-2"
+                          />
+                        ) : (
+                          <DemoQr />
+                        )}
+                        <div className="text-sm text-slate-300">
+                          <p>
+                            {upiId
+                              ? `Scan to pay via ${upiId}.`
+                              : "Scan to complete a demo payment."}
+                          </p>
+                          <p className="mt-2 text-xs text-slate-400">
+                            {upiId
+                              ? "Payments are handled externally."
+                              : "This QR is for UI preview only."}
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   </Card>
                 ) : (

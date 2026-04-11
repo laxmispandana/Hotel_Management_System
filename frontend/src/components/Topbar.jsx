@@ -1,7 +1,5 @@
-﻿export default function Topbar({
+export default function Topbar({
   user,
-  onToggleTheme,
-  theme,
   onToggleSidebar,
   onSignOut,
 }) {
@@ -33,14 +31,9 @@
         >
           Sign out
         </button>
-        <button
-          onClick={onToggleTheme}
-          className="rounded-xl border border-slate-200/70 bg-slate-100 px-3 py-2 text-xs text-slate-600 hover:bg-slate-200 dark:border-slate-700/60 dark:bg-slate-800/60 dark:text-slate-200 dark:hover:bg-slate-800"
-        >
-          {theme === "dark" ? "Light" : "Dark"} Mode
-        </button>
         <div className="h-9 w-9 rounded-full bg-gradient-to-br from-indigo-400 via-purple-400 to-sky-300 shadow-soft" />
       </div>
     </header>
   );
 }
+

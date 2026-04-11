@@ -7,6 +7,7 @@ A full-stack hotel management system designed for cloud deployment. The project 
 - Room management, bookings, check-in/out, services, and billing
 - PostgreSQL schema with invoices and booking services
 - Responsive React UI with dashboards and toasts
+- Admin UPI registration with QR code display on invoices (demo)
 - GitHub Actions workflow for automated build/test and Docker builds
 
 ## Architecture
@@ -21,13 +22,13 @@ A full-stack hotel management system designed for cloud deployment. The project 
 2. Configure backend env:
 
 ```
-C:\Users\samee\OneDrive\Desktop\hotel\backend\.env
+backend/.env
 ```
 
 3. Start backend:
 
 ```bash
-cd C:\Users\samee\OneDrive\Desktop\hotel\backend
+cd backend
 npm install
 npm run dev
 ```
@@ -35,7 +36,7 @@ npm run dev
 4. Start frontend:
 
 ```bash
-cd C:\Users\samee\OneDrive\Desktop\hotel\frontend
+cd frontend
 npm install
 npm run dev
 ```
@@ -46,6 +47,29 @@ npm run dev
 - Admin: `admin@hotel.local` / `Admin@123`
 - Staff: `staff@hotel.local` / `Staff@123`
 - Customer: `guest@hotel.local` / `Guest@123`
+
+## Admin UPI QR (Demo)
+Admins can register a UPI ID from the Dashboard. The app generates a QR code and shows it on invoices.
+This is UI-only demo behavior and does not process real payments.
+
+## Deployment (Railway + Vercel)
+### Backend (Railway)
+1. Create a new Railway project from GitHub.
+2. Set **Root Directory** to `backend`.
+3. Set build/start commands:
+   - Build: `npm install`
+   - Start: `npm run start`
+4. Environment variables:
+   - `DATABASE_URL=...`
+   - `JWT_SECRET=...`
+   - `PORT=8081` (or let Railway assign)
+
+### Frontend (Vercel)
+1. Import the repo into Vercel.
+2. Set **Root Directory** to `frontend`.
+3. Environment variable:
+   - `VITE_API_URL=https://<your-railway-backend-url>`
+4. Deploy and open the Vercel URL.
 
 ## API Endpoints
 Auth:

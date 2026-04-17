@@ -124,4 +124,4 @@ The workflow in `.github/workflows/ci.yml` performs:
 - Add email notifications
 - Integrate payments
 - Deploy to a cloud provider
-Updated by laxmispandana
+

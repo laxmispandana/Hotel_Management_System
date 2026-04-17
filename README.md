@@ -41,7 +41,6 @@ npm install
 npm run dev
 ```
 
-5. Open the UI at http://localhost:5173
 
 ## Demo Credentials
 - Admin: `admin@hotel.local` / `Admin@123`

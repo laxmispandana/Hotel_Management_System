@@ -118,6 +118,7 @@ The workflow in `.github/workflows/ci.yml` performs:
 - backend tests
 - frontend build
 - Docker image builds
+- Docker image publishing to GitHub Container Registry on pushes to `main`
 
 ## Next Steps
 - Add email notifications

@@ -140,3 +140,6 @@ init()
     console.error("Failed to init database", err);
     process.exit(1);
   });
+  app.get("/", (req, res) => {
+  res.send("Hotel Management API is running");
+});

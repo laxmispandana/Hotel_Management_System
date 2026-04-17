@@ -135,11 +135,13 @@ export default function App() {
   const [upiId, setUpiId] = useState(() => localStorage.getItem("hotel_upi") || "");
   const [upiQr, setUpiQr] = useState(() => localStorage.getItem("hotel_upi_qr") || "");
   const [upiSaving, setUpiSaving] = useState(false);
+  const [serviceDeletingId, setServiceDeletingId] = useState(null);
   const [checkCode, setCheckCode] = useState("");
   const [checkoutCode, setCheckoutCode] = useState("");
   const [invoiceCode, setInvoiceCode] = useState("");
   const [roomModalOpen, setRoomModalOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const [confirmServiceDelete, setConfirmServiceDelete] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -446,6 +448,21 @@ export default function App() {
       refreshData();
     } catch (err) {
       addToast(err.message, "error");
+    }
+  };
+
+  const handleServiceDelete = async (service) => {
+    if (!service) return;
+    try {
+      setServiceDeletingId(service.id);
+      await apiFetch(`/api/services/${service.id}`, { method: "DELETE" });
+      addToast("Service deleted.");
+      setConfirmServiceDelete(null);
+      refreshData();
+    } catch (err) {
+      addToast(err.message, "error");
+    } finally {
+      setServiceDeletingId(null);
     }
   };
 
@@ -1253,7 +1270,18 @@ export default function App() {
               <div className="grid gap-4 md:grid-cols-3">
                 {services.map((service) => (
                   <Card key={service.id} className="flex flex-col gap-3">
-                    <div className="text-3xl">🍽️</div>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="text-3xl">🍽️</div>
+                      {user.role === "admin" && (
+                        <button
+                          type="button"
+                          onClick={() => setConfirmServiceDelete(service)}
+                          className="rounded-xl border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-600 transition hover:bg-rose-50 dark:border-rose-400/30 dark:text-rose-300 dark:hover:bg-rose-500/10"
+                        >
+                          Delete
+                        </button>
+                      )}
+                    </div>
                     <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
                       {service.name}
                     </h3>
@@ -1684,6 +1712,41 @@ export default function App() {
           <button
             onClick={() => setConfirmDelete(null)}
             className="rounded-xl border border-white/10 px-4 py-2 text-sm text-slate-200 hover:bg-white/10"
+          >
+            Cancel
+          </button>
+        </div>
+      </Modal>
+
+      <Modal
+        open={confirmServiceDelete !== null}
+        title="Delete Service"
+        onClose={() => {
+          if (!serviceDeletingId) {
+            setConfirmServiceDelete(null);
+          }
+        }}
+      >
+        <p className="text-sm text-slate-600 dark:text-slate-300">
+          Delete {confirmServiceDelete?.name}? It will be removed from the active
+          service list but past booking records will stay intact.
+        </p>
+        <div className="mt-6 flex gap-3">
+          <button
+            type="button"
+            onClick={() => handleServiceDelete(confirmServiceDelete)}
+            disabled={serviceDeletingId === confirmServiceDelete?.id}
+            className="rounded-xl border border-rose-400/40 px-4 py-2 text-sm text-rose-200 transition hover:bg-rose-500/10 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {serviceDeletingId === confirmServiceDelete?.id
+              ? "Deleting..."
+              : "Delete"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setConfirmServiceDelete(null)}
+            disabled={serviceDeletingId === confirmServiceDelete?.id}
+            className="rounded-xl border border-white/10 px-4 py-2 text-sm text-slate-200 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
           >
             Cancel
           </button>

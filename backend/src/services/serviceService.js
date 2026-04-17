@@ -29,7 +29,14 @@ async function updateService(id, { name, price, active }) {
 }
 
 async function deleteService(id) {
-  await pool.query("DELETE FROM services WHERE id = $1", [id]);
+  const { rows } = await pool.query(
+    `UPDATE services
+     SET active = FALSE
+     WHERE id = $1
+     RETURNING *`,
+    [id]
+  );
+  return rows[0];
 }
 
 async function addServiceToBooking({ bookingId, serviceId, quantity }) {
